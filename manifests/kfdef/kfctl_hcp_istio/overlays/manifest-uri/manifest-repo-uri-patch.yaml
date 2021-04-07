@@ -1,0 +1,11 @@
+apiVersion: kfdef.apps.kubeflow.org/v1
+kind: KfDef
+metadata:
+  name: kubeflow
+  namespace: kubeflow
+spec:
+  repos:
+  - name: manifests
+    path: /mapr/kubeflow/manifests
+    uri: $(MANIFEST_REPO_URI-envvar)
+

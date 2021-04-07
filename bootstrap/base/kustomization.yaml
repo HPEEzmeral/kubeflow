@@ -1,0 +1,46 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- kubeflow-namespace.yaml 
+- kubeflow-sa.yaml
+- kubeflow-sa-localpathprovisioner.yaml
+- kubeflow-cr.yaml
+- kubeflow-cr-localpathprovisioner.yaml
+- kubeflow-crb.yaml
+- kubeflow-crb-localpathprovisioner.yaml
+- kubeflow-imagepullsecret.yaml
+- kubeflow-crd-kubeflowoperator.yaml
+- kubeflow-deploy-kubeflowoperator.yaml
+- kubeflow-cm-localpathprovisioner.yaml
+- kubeflow-deploy-localpathprovisioner.yaml
+- kubeflow-sc-localpathprovisioner.yaml
+images:
+  - name: kubeflow-operator
+    newName: $(AIRGAP_REGISTRY)gcr.io/mapr-252711/kf-ecp-5.3.0/kubeflow-operator
+    newTag: $(MANIFESTS_IMAGE_TAG)
+  - name: busybox
+    newName: $(AIRGAP_REGISTRY)busybox
+  - name: local-path-provisioner
+    newName: $(AIRGAP_REGISTRY)rancher/local-path-provisioner
+configMapGenerator:
+- name: kubeflow-operator-cm
+  env: environment.env
+generatorOptions:
+  disableNameSuffixHash: true
+vars:
+- name: AIRGAP_REGISTRY
+  objref:
+    kind: ConfigMap
+    name: kubeflow-operator-cm
+    apiVersion: v1
+  fieldref:
+    fieldpath: data.AIRGAP_REGISTRY
+- name: MANIFESTS_IMAGE_TAG
+  objref:
+    kind: ConfigMap
+    name: kubeflow-operator-cm
+    apiVersion: v1
+  fieldref:
+    fieldpath: data.MANIFESTS_IMAGE_TAG
+configurations:
+- varrefs.yaml
