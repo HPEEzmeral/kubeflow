@@ -1,0 +1,3 @@
+varReference:
+- path: spec/applications/kustomizeConfig/parameters/value
+  kind: KfDef
