@@ -443,17 +443,6 @@ spec:
         path: seldon/seldon-core-operator
     name: seldon-core-operator
   - kustomizeConfig:
-      overlays:
-      - istio
-      - image-pull-secret
-      parameters:
-      - name: airgapRegistry
-        value: $(AIRGAP_REGISTRY-envvar)
-      repoRef:
-        name: manifests
-        path: zeppelin-operator
-    name: zeppelin-operator
-  - kustomizeConfig:
       parameters:
       - name: airgapRegistry
         value: $(AIRGAP_REGISTRY-envvar)
