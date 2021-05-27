@@ -1,29 +1,31 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: dex-cm-generator
+  name: dex-secret-generator
   namespace: kubeflow-operator
 spec:
   template:
     spec:
+      imagePullSecrets:
+        - name: hpe-imagepull-secrets
       serviceAccountName: kubeflow-operator
       containers:
         - name: script
-          image: bitnami/kubectl:latest
+          image: kubernetes-python
           imagePullPolicy: IfNotPresent
-          command: ["/bin/bash"]
+          command: ["python3"]
           args:
-            - "/mnt/dex-cm-generator/entrypoint.sh"
+            - "/mnt/dex-secret-generator/entrypoint.py"
           volumeMounts:
-            - mountPath: /mnt/dex-cm-generator
-              name: dex-cm-generator
+            - mountPath: /mnt/dex-secret-generator
+              name: dex-secret-generator
           env:
             - name: AUTH_SECRET_NAME
               value: "$(AUTH_SECRET_NAME-env)"
             - name: AUTH_SECRET_NAMESPACE
               value: "$(AUTH_SECRET_NAMESPACE-env)"
       volumes:
-        - name: dex-cm-generator
+        - name: dex-secret-generator
           configMap:
-            name: dex-cm-generator
+            name: dex-secret-generator
       restartPolicy: Never

@@ -3,37 +3,39 @@ kind: Kustomization
 resources:
 - auth-ns.yaml
 - job.yaml
+generatorOptions:
+ disableNameSuffixHash: true
 configMapGenerator:
-- name: dex-cm-generator
+- name: dex-secret-generator
   namespace: kubeflow-operator
   files:
-    - entrypoint.sh
+    - entrypoint.py
     - template.yaml
-- name: dex-cm-generator-parameters
+- name: dex-secret-generator-parameters
   env: params.env
 images:
-  - name: bitnami/kubectl
-    newName: $(AIRGAP_REGISTRY-env)bitnami/kubectl
-    newTag: "1.18"
+  - name: kubernetes-python
+    newName: $(AIRGAP_REGISTRY-env)gcr.io/mapr-252711/kf-ecp-5.4.0/dex-secret-gen
+    newTag: "v1.2.0-latest"
 vars:
 - name: AIRGAP_REGISTRY-env
   objref:
     kind: ConfigMap
-    name: dex-cm-generator-parameters
+    name: dex-secret-generator-parameters
     apiVersion: v1
   fieldref:
     fieldpath: data.AIRGAP_REGISTRY
 - name: AUTH_SECRET_NAME-env
   objref:
     kind: ConfigMap
-    name: dex-cm-generator-parameters
+    name: dex-secret-generator-parameters
     apiVersion: v1
   fieldref:
     fieldpath: data.AUTH_SECRET_NAME
 - name: AUTH_SECRET_NAMESPACE-env
   objref:
     kind: ConfigMap
-    name: dex-cm-generator-parameters
+    name: dex-secret-generator-parameters
     apiVersion: v1
   fieldref:
     fieldpath: data.AUTH_SECRET_NAMESPACE
