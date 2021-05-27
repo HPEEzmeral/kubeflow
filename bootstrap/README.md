@@ -22,6 +22,8 @@ Version of `kubectl` should be 1.14 or higher.
 
 * `AIRGAP_REGISTRY` - address of docker registry for airgapped env, e.g. `localhost:5000/` (Trailing slash is needed). If env is not airgapped, set empty string as value;
 
+* `DISABLE_NOTEBOOKSERVERS_LINK` - allow to disable "notebook servers" link in kubeflow dashboard. Set the variable to `true` before install kubeflow. Default value - `false`;
+
 list of specific all used variables you can find in README file of each kustomization directory.
 
 ## Install
