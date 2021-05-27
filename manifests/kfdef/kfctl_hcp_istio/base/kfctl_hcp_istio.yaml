@@ -20,41 +20,40 @@ spec:
         name: manifests
         path: application/application
     name: application
+#  - kustomizeConfig:
+#      repoRef:
+#        name: manifests
+#        path: istio-1-9-0/istio-namespace
+#    name: istio-namespace
+#  - kustomizeConfig:
+#      parameters:
+#      - name: namespace
+#        value: istio-system
+#      repoRef:
+#        name: manifests
+#        path: istio-1-9-0/istio-crds
+#    name: istio-crds
+#  - kustomizeConfig:
+#      parameters:
+#      - name: namespace
+#        value: istio-system
+#      - name: airgapRegistry
+#        value: $(AIRGAP_REGISTRY-envvar)
+#      repoRef:
+#        name: manifests
+#        path: istio-1-9-0/istio-install
+#    name: istio-install
+#  - kustomizeConfig:
+#      parameters:
+#      - name: namespace
+#        value: istio-system
+#      - name: airgapRegistry
+#        value: $(AIRGAP_REGISTRY-envvar)
+#      repoRef:
+#        name: manifests
+#        path: istio-1-9-0/cluster-local-gateway
+#    name: cluster-local-gateway
   - kustomizeConfig:
-      parameters:
-      - name: namespace
-        value: istio-system
-      repoRef:
-        name: manifests
-        path: istio-1-3-1/istio-crds-1-3-1
-    name: istio-crds
-  - kustomizeConfig:
-      overlays:
-      - grafana
-      - kiali
-      parameters:
-      - name: namespace
-        value: istio-system
-      - name: airgapRegistry
-        value: $(AIRGAP_REGISTRY-envvar)
-      repoRef:
-        name: manifests
-        path: istio-1-3-1/istio-install-1-3-1
-    name: istio-install
-  - kustomizeConfig:
-      parameters:
-      - name: namespace
-        value: istio-system
-      - name: airgapRegistry
-        value: $(AIRGAP_REGISTRY-envvar)
-      repoRef:
-        name: manifests
-        path: istio-1-3-1/cluster-local-gateway-1-3-1
-    name: cluster-local-gateway
-  - kustomizeConfig:
-      parameters:
-      - name: clusterRbacConfig
-        value: 'ON_WITH_EXCLUSION'
       repoRef:
         name: manifests
         path: istio/istio
@@ -454,4 +453,4 @@ spec:
   - name: manifests
     path: /mapr/kubeflow/manifests
     uri: file:///opt/mapr/manifests.tar.gz
-    
+
