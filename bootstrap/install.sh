@@ -3,7 +3,7 @@ set -e
 
 BASEDIR=$(dirname "$0")
 KFCTL_HOME=$(cd "${BASEDIR}/../"; pwd)
-DISABLE_NOTEBOOKSERVERS_LINK=${DISABLE_NOTEBOOKSERVERS_LINK:-false}
+DISABLE_NOTEBOOKSERVERS_LINK=${DISABLE_NOTEBOOKSERVERS_LINK:-true}
 
 test_dirs()
 {
@@ -20,7 +20,7 @@ install()
 {
     cd "${KFCTL_HOME}/bootstrap/"
     kubectl apply -k ./base/
-    kubectl apply -k ./components/dex-cm-ldap/
+    kubectl apply -k ./components/dex-secret-ldap/
     if [ ${DISABLE_NOTEBOOKSERVERS_LINK} = false ] ;
     then
       kubectl apply -k ../manifests/kfdef/kfctl_hcp_istio/base/
