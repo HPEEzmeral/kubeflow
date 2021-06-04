@@ -13,7 +13,7 @@ kubectl patch -n hpecp hpecpconfig hpecp-global-config --type json -p '
       "targetPorts": [
         {
           "importName": "http-80",
-          "targetName": "http-80"
+          "targetName": "http2"
         }
       ]
     }
