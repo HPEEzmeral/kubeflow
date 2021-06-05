@@ -1,0 +1,75 @@
+apiVersion: kubeflow.org/v1
+kind: PyTorchJob
+metadata:
+  name: label-pytorch-mnist-ddp-cpu
+  labels: 
+    hpecp.hpe.com/fsmount: t1
+spec:
+  pytorchReplicaSpecs:
+    Master:
+      replicas: 1
+      restartPolicy: OnFailure
+      template:
+        metadata:
+          annotations:
+            sidecar.istio.io/inject: "false"
+          labels:
+            hpecp.hpe.com/fsmount: t1
+        spec:
+          containers:
+            - name: pytorch
+              image: gcr.io/kubeflow-ci/pytorch-dist-mnist-test:v1.0
+              volumeMounts:
+              - mountPath: /mnt/kubeflow-gcfs
+                name: data-volume
+              - mountPath: /bd-fs-mnt
+                name: ezmount
+              resources:
+                limits:
+                  cpu: "1"
+                  memory: "2Gi"
+                  nvidia.com/gpu: "0"
+              env:
+              - name: https_proxy
+                value: "http://web-proxy.corp.hpecorp.net:8080"
+              - name: http_proxy
+                value: "http://web-proxy.corp.hpecorp.net:8080"
+          volumes:
+            - name: data-volume
+              persistentVolumeClaim:
+                claimName: pvcpy
+                readOnly: false
+            - name: ezmount
+              hostPath:
+                path: /opt/bluedata/share/t1    
+    Worker:
+      replicas: 3
+      restartPolicy: OnFailure
+      template:
+        metadata:
+          annotations:
+            sidecar.istio.io/inject: "false"
+          labels:
+            hpecp.hpe.com/fsmount: t1
+        spec:
+          containers:
+            - name: pytorch
+              image: gcr.io/kubeflow-ci/pytorch-dist-mnist-test:v1.0
+              volumeMounts:
+                - mountPath: /mnt/kubeflow-gcfs
+                  name: data-volume
+              resources:
+                limits:
+                  cpu: "1"
+                  memory: "2Gi"
+                  nvidia.com/gpu: "0"
+              env:
+              - name: https_proxy
+                value: "http://web-proxy.corp.hpecorp.net:8080"
+              - name: http_proxy
+                value: "http://web-proxy.corp.hpecorp.net:8080"
+          volumes:
+            - name: data-volume
+              persistentVolumeClaim:
+                claimName: pvcpy
+                readOnly: false
