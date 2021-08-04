@@ -6,9 +6,11 @@ import yaml
 
 dex_config_secret_name = "dex-config-secret"
 dex_config_secret_namespace = "auth"
+dex_config_secret_bind_pw = "AUTH_SECRET_BIND_PW"
 
 auth_secret_name = os.environ["AUTH_SECRET_NAME"] if "AUTH_SECRET_NAME" in os.environ and os.environ["AUTH_SECRET_NAME"] else "hpecp-ext-auth-secret"
 auth_secret_namespace = os.environ["AUTH_SECRET_NAMESPACE"] if "AUTH_SECRET_NAMESPACE" in os.environ and os.environ["AUTH_SECRET_NAMESPACE"] else "hpecp"
+auth_secret_bind_pw = ''
 
 __location__ = os.path.realpath(
     os.path.join(os.getcwd(), os.path.dirname(__file__)))
@@ -131,9 +133,11 @@ def get_bind_configured(connector: dict, auth_type_info) -> str:
         sys.exit("[ERROR]   'bind_pwd' is not found in secret")
     
     bind_pw = b64decode(bind_pw)
-
     connector['config']['bindDN'] = bind_dn
-    connector['config']['bindPW'] = bind_pw
+    connector['config']['bindPW'] = '$' + dex_config_secret_bind_pw
+
+    global auth_secret_bind_pw
+    auth_secret_bind_pw = bind_pw
 
     print("Bind settings cofigured!")
 
@@ -280,7 +284,8 @@ v1.create_namespaced_secret(
         ),
         type="Opaque",
         data={
-            "config.yaml" : b64encode(yaml.dump(config))
+            "config.yaml" : b64encode(yaml.dump(config)),
+            "AUTH_SECRET_BIND_PW" : b64encode(auth_secret_bind_pw)
         },
     )
 )

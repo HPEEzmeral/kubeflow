@@ -1,0 +1,9 @@
+varReference:
+- path: spec/template/spec/containers/image
+  kind: Job
+- path: spec/template/spec/containers/env/value
+  kind: Job
+- path: metadata/namespace
+  kind: ServiceAccount
+- path: subjects/namespace
+  kind: ClusterRoleBinding
