@@ -51,7 +51,8 @@ delete_knative()
     ./kustomize build ${MANIFESTS_DIR}/common/knative/knative-serving-crds/base | kubectl delete -f -
     ./kustomize build ${MANIFESTS_DIR}/common/knative/knative-serving-install/base | kubectl delete -f -
     ./kustomize build ${MANIFESTS_DIR}/common/knative/knative-eventing-crds/base | kubectl delete -f -
-    ./kustomize build ${MANIFESTS_DIR}/common/knative/knative-eventing-install/base | kubectl delete -f -
+    ./kustomize build ${MANIFESTS_DIR}/bootstrap/components/image-pull-secret/knative-eventing | kubectl delete -f - 
+    ./kustomize build ${MANIFESTS_DIR}/common/knative/knative-eventing-install/overlays/image-pull-secret | kubectl delete -f -
 }
 
 delete_cluster_local_gateway()
