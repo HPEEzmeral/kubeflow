@@ -6,17 +6,11 @@ MANIFESTS_DIR=manifests
 CURRENT_DIR=$(pwd)
 
 DISABLE_ISTIO=${DISABLE_ISTIO:-false}
-DISABLE_NOTEBOOKSERVERS_LINK=${DISABLE_NOTEBOOKSERVERS_LINK:-false}
 MANIFESTS_LOCATION=${MANIFESTS_LOCATION:-"file://${CURRENT_DIR}/static/manifests.tar.gz"}
 
 test_env_vars()
 {
     local ret_val=0
-
-    if [ ${DISABLE_NOTEBOOKSERVERS_LINK} != true -a ${DISABLE_NOTEBOOKSERVERS_LINK} != false ]; then
-      echo 'DISABLE_NOTEBOOKSERVERS_LINK should be unset or set to either "true" or "false".'
-      ret_val=1
-    fi
 
     if [ ${DISABLE_ISTIO} != true -a ${DISABLE_ISTIO} != false ]; then
         echo 'DISABLE_ISTIO should be unset or set to either "true" or "false".'
@@ -42,17 +36,17 @@ delete_istio()
 
 delete_authservices()
 {
-    ./kustomize build ${MANIFESTS_DIR}/common/oidc-authservice/base | kubectl delete -f -
     ./kustomize build ${MANIFESTS_DIR}/common/dex/overlays/istio | kubectl delete -f -
+    ./kustomize build ${MANIFESTS_DIR}/common/oidc-authservice/base | kubectl delete -f -
 }
 
 delete_knative()
 {
-    ./kustomize build ${MANIFESTS_DIR}/common/knative/knative-serving-crds/base | kubectl delete -f -
-    ./kustomize build ${MANIFESTS_DIR}/common/knative/knative-serving-install/base | kubectl delete -f -
-    ./kustomize build ${MANIFESTS_DIR}/common/knative/knative-eventing-crds/base | kubectl delete -f -
-    ./kustomize build ${MANIFESTS_DIR}/bootstrap/components/image-pull-secret/knative-eventing | kubectl delete -f - 
     ./kustomize build ${MANIFESTS_DIR}/common/knative/knative-eventing-install/overlays/image-pull-secret | kubectl delete -f -
+    ./kustomize build ${MANIFESTS_DIR}/bootstrap/components/image-pull-secret/knative-eventing | kubectl delete -f -
+    ./kustomize build ${MANIFESTS_DIR}/common/knative/knative-eventing-crds/base | kubectl delete -f -
+    ./kustomize build ${MANIFESTS_DIR}/common/knative/knative-serving-install/base | kubectl delete -f -
+    ./kustomize build ${MANIFESTS_DIR}/common/knative/knative-serving-crds/base | kubectl delete -f -
 }
 
 delete_cluster_local_gateway()
@@ -60,8 +54,14 @@ delete_cluster_local_gateway()
     ./kustomize build ${MANIFESTS_DIR}/common/istio-1-9-0/cluster-local-gateway/base | kubectl delete -f -
 }
 
+delete_prism()
+{
+    ./kustomize build ${MANIFESTS_DIR}/apps/prism/base | kubectl delete -f -
+}
+
 delete_kf_services()
 {
+    MANIFESTS_DIR=$0
     ./kustomize build ${MANIFESTS_DIR}/contrib/seldon/seldon-core-operator/overlays/application | kubectl delete -f -
     ./kustomize build ${MANIFESTS_DIR}/contrib/application/application-crds/base | kubectl delete -f -
     ./kustomize build ${MANIFESTS_DIR}/common/user-namespace/base | kubectl delete -f -
@@ -81,12 +81,20 @@ delete_kf_services()
     ./kustomize build ${MANIFESTS_DIR}/apps/centraldashboard/upstream/overlays/istio | kubectl delete -f -
     ./kustomize build ${MANIFESTS_DIR}/apps/katib/upstream/installs/katib-with-kubeflow | kubectl delete -f -
     ./kustomize build ${MANIFESTS_DIR}/apps/kfserving/upstream/overlays/kubeflow | kubectl delete -f -
+    ./kustomize build ${MANIFESTS_DIR}/apps/pipeline/upstream/third-party/minio-console/base | kubectl delete -f -
     ./kustomize build ${MANIFESTS_DIR}/apps/pipeline/upstream/third-party/minio/options/istio | kubectl delete -f -
-    ./kustomize build ${MANIFESTS_DIR}/apps/pipeline/upstream/third-party/minio/base | kubectl delete -f -
-    ./kustomize build ${MANIFESTS_DIR}/apps/pipeline/upstream/env/platform-agnostic-multi-user | kubectl delete -f -
+    ./kustomize build ${MANIFESTS_DIR}/apps/pipeline/upstream/third-party/minio/overlays/ldap | kubectl delete -f -
+    ./kustomize build ${MANIFESTS_DIR}/apps/pipeline/upstream/overlays/image-pull-secret | kubectl delete -f -
+    ./kustomize build ${MANIFESTS_DIR}/apps/pipeline/upstream/cluster-scoped-resources | kubectl delete -f -
     ./kustomize build ${MANIFESTS_DIR}/common/istio-1-9-0/kubeflow-istio-resources/base | kubectl delete -f -
     ./kustomize build ${MANIFESTS_DIR}/common/kubeflow-roles/base | kubectl delete -f -
     ./kustomize build ${MANIFESTS_DIR}/common/kubeflow-namespace/base | kubectl delete -f -
+    return 0
+}
+
+delete_kf_url()
+{
+    ./kustomize build ${MANIFESTS_DIR}/bootstrap/components/hpecpconfig-patch | kubectl delete -f - -n ${KF_JOBS_NS}
 }
 
 if test_env_vars; then
@@ -101,8 +109,12 @@ if test_env_vars; then
 
     ./kustomize build ${MANIFESTS_DIR}/bootstrap/components/installer | kubectl delete -f - -n ${KF_JOBS_NS} --ignore-not-found
 
+    delete_kf_url
+    printf "\nDeleting prism...\n\n"
+    delete_prism
     printf "\nTrying to delete kubeflow services...\n\n"
-    delete_kf_services
+    export -f delete_kf_services
+    while ! timeout -s SIGINT 4m bash -c delete_kf_services ${MANIFESTS_DIR}; do printf "\n*** Retrying to delete kubeflow services... ***\n\n"; done
 
     if [ ${DISABLE_ISTIO} != true ]; then
         printf "\nTrying to delete cluster local gateway...\n\n"
