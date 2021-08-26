@@ -27,11 +27,11 @@ test_env_vars()
     }
     
     echo ${TLS_SECRET_NS} | grep ".*\s.*" && {
-        echo 'TLS_SECRET_NAME should not contain any spaces.'
+        echo 'TLS_SECRET_NS should not contain any spaces.'
         ret_val=1
     }
 
-    if [ -z "$TLS_SECRET_NAME" ] && [ -z "$TLS_CERT_LOCATION" ]; then
+    if [ -n "$TLS_SECRET_NAME" ] && [ -n "$TLS_CERT_LOCATION" ]; then
         echo 'TLS_SECRET_NAME and TLS_CERT_LOCATION should not be set at the same time.'
         ret_val=1
     fi
