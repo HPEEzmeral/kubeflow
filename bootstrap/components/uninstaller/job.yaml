@@ -18,6 +18,8 @@ spec:
         volumeMounts:
         - mountPath: /mnt/entrypoint
           name: entrypoint
+        - mountPath: /usr/share/ca-certificates/kf-jobs
+          name: cert
         env:
         - name: MANIFESTS_LOCATION
           value: "$(MANIFESTS_LOCATION)"
@@ -30,3 +32,12 @@ spec:
       - name: entrypoint
         configMap:
           name: kf-uninstaller
+      - name: cert
+        secret:
+          secretName: kf-jobs-cert-secret
+          optional: true
+          items:
+            - key: tls.crt
+              path: kf-jobs-tls.crt
+            - key: tls.key
+              path: kf-jobs-tls.key

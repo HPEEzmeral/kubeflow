@@ -163,7 +163,13 @@ install()
 }
 
 if test_env_vars; then
-    curl -Lo ${MANIFESTS_DIR}.tar.gz ${MANIFESTS_LOCATION}
+    if [ -r /usr/share/ca-certificates/kf-jobs/kf-jobs-tls.crt ]; then
+        update-ca-certificates
+        curl --cacert /usr/share/ca-certificates/kf-jobs/kf-jobs-tls.crt -Lo ${MANIFESTS_DIR}.tar.gz ${MANIFESTS_LOCATION}
+    else
+        curl -Lo ${MANIFESTS_DIR}.tar.gz ${MANIFESTS_LOCATION}
+    fi
+    
     mkdir manifests
     if tar -xf ${MANIFESTS_DIR}.tar.gz -C ${MANIFESTS_DIR} --strip-components 1; then
         printf "\nManifests downloaded successfully\n\n"

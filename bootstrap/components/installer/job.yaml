@@ -18,6 +18,8 @@ spec:
         volumeMounts:
         - mountPath: /mnt/entrypoint
           name: entrypoint
+        - mountPath: /usr/share/ca-certificates/kf-jobs
+          name: cert
         env:
         - name: DISABLE_ISTIO
           value: "$(DISABLE_ISTIO)"
@@ -40,3 +42,12 @@ spec:
       - name: entrypoint
         configMap:
           name: kf-installer
+      - name: cert
+        secret:
+          secretName: kf-jobs-cert-secret
+          optional: true
+          items:
+            - key: tls.crt
+              path: kf-jobs-tls.crt
+            - key: tls.key
+              path: kf-jobs-tls.key
