@@ -5,6 +5,12 @@ BASEDIR=$(dirname "$0")
 KFCTL_HOME=$(cd "${BASEDIR}/../"; pwd)
 DISABLE_NOTEBOOKSERVERS_LINK=${DISABLE_NOTEBOOKSERVERS_LINK:-true}
 
+# Check if var is set https://stackoverflow.com/a/13864829 
+if [ -z ${USER_AIRGAP_REGISTRY+x} ]; then
+    USER_AIRGAP_REGISTRY=$AIRGAP_REGISTRY
+    export USER_AIRGAP_REGISTRY
+fi
+
 test_dirs()
 {
     if [ -d "${KFCTL_HOME}/manifests/kfdef/kfctl_hcp_istio/base/" ] ; then

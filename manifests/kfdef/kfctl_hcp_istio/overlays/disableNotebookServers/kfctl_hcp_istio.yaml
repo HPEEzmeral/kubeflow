@@ -330,6 +330,8 @@ spec:
       parameters:
       - name: airgapRegistry
         value: $(AIRGAP_REGISTRY-envvar)
+      - name: userAirgapRegistry
+        value: $(USER_AIRGAP_REGISTRY-envvar)
       repoRef:
         name: manifests
         path: pipeline/api-service

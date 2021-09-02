@@ -36,5 +36,12 @@ vars:
     apiVersion: v1
   fieldref:
     fieldpath: data.AIRGAP_REGISTRY
+- name: USER_AIRGAP_REGISTRY
+  objref:
+    kind: ConfigMap
+    name: kubeflow-operator-cm
+    apiVersion: v1
+  fieldref:
+    fieldpath: data.USER_AIRGAP_REGISTRY
 configurations:
 - varrefs.yaml
