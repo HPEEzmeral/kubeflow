@@ -18,7 +18,7 @@ resources:
 images:
   - name: kubeflow-operator
     newName: $(AIRGAP_REGISTRY)gcr.io/mapr-252711/kf-ecp-5.3.0/kubeflow-operator
-    newTag: ez-gl-latest
+    newTag: ez-gl-20210910
   - name: busybox
     newName: $(AIRGAP_REGISTRY)busybox
   - name: local-path-provisioner
