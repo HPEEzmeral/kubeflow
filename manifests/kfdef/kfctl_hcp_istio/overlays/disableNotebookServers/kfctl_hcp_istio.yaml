@@ -240,6 +240,17 @@ spec:
       - application
       parameters:
       - name: namespace
+        value: knative-eventing
+      repoRef:
+        name: manifests
+        path: knative/knative-eventing-crds
+    name: knative-eventing-crds
+  - kustomizeConfig:
+      overlays:
+      - application
+      - image-pull-secret
+      parameters:
+      - name: namespace
         value: knative-serving
       - name: airgapRegistry
         value: $(AIRGAP_REGISTRY-envvar)
@@ -247,6 +258,19 @@ spec:
         name: manifests
         path: knative/knative-serving-install
     name: knative-install
+  - kustomizeConfig:
+      overlays:
+      - application
+      - image-pull-secret
+      parameters:
+      - name: namespace
+        value: knative-eventing
+      - name: airgapRegistry
+        value: $(AIRGAP_REGISTRY-envvar)
+      repoRef:
+        name: manifests
+        path: knative/knative-eventing-install
+    name: knative-eventing-install
   - kustomizeConfig:
       overlays:
       - application
@@ -431,18 +455,18 @@ spec:
         name: manifests
         path: profiles
     name: profiles
-  - kustomizeConfig:
-      overlays:
-      - application
-      parameters:
-      - name: SERVICE_NAMESPACE
-        value: kubeflow
-      - name: airgapRegistry
-        value: $(AIRGAP_REGISTRY-envvar)
-      repoRef:
-        name: manifests
-        path: seldon/seldon-core-operator
-    name: seldon-core-operator
+#  - kustomizeConfig:
+#      overlays:
+#      - application
+#      parameters:
+#      - name: SERVICE_NAMESPACE
+#        value: kubeflow
+#      - name: airgapRegistry
+#        value: $(AIRGAP_REGISTRY-envvar)
+#      repoRef:
+#        name: manifests
+#        path: seldon/seldon-core-operator
+#    name: seldon-core-operator
   - kustomizeConfig:
       parameters:
       - name: airgapRegistry
