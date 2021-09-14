@@ -4,3 +4,17 @@ metadata:
   labels:
     name: kubeflow
   name: kubeflow
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    name: knative-eventing
+  name: knative-eventing
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    name: knative-serving
+  name: knative-serving

@@ -3,6 +3,8 @@ kind: Kustomization
 resources:
 - namespace.yaml
 - imagepullsecret.yaml
+- eventing-imagepullsecret.yaml
+- serving-imagepullsecret.yaml
 - kfctl_hcp_istio.yaml
 generatorOptions:
   disableNameSuffixHash: true
