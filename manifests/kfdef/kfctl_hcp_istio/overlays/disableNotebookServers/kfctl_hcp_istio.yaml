@@ -20,39 +20,39 @@ spec:
         name: manifests
         path: application/application
     name: application
-#  - kustomizeConfig:
-#      repoRef:
-#        name: manifests
-#        path: istio-1-9-0/istio-namespace
-#    name: istio-namespace
-#  - kustomizeConfig:
-#      parameters:
-#      - name: namespace
-#        value: istio-system
-#      repoRef:
-#        name: manifests
-#        path: istio-1-9-0/istio-crds
-#    name: istio-crds
-#  - kustomizeConfig:
-#      parameters:
-#      - name: namespace
-#        value: istio-system
-#      - name: airgapRegistry
-#        value: $(AIRGAP_REGISTRY-envvar)
-#      repoRef:
-#        name: manifests
-#        path: istio-1-9-0/istio-install
-#    name: istio-install
-#  - kustomizeConfig:
-#      parameters:
-#      - name: namespace
-#        value: istio-system
-#      - name: airgapRegistry
-#        value: $(AIRGAP_REGISTRY-envvar)
-#      repoRef:
-#        name: manifests
-#        path: istio-1-9-0/cluster-local-gateway
-#    name: cluster-local-gateway
+  - kustomizeConfig:
+      repoRef:
+        name: manifests
+        path: istio-1-9-0/istio-namespace
+    name: istio-namespace
+  - kustomizeConfig:
+      parameters:
+      - name: namespace
+        value: istio-system
+      repoRef:
+        name: manifests
+        path: istio-1-9-0/istio-crds
+    name: istio-crds
+  - kustomizeConfig:
+      parameters:
+      - name: namespace
+        value: istio-system
+      - name: airgapRegistry
+        value: $(AIRGAP_REGISTRY-envvar)
+      repoRef:
+        name: manifests
+        path: istio-1-9-0/istio-install
+    name: istio-install
+  - kustomizeConfig:
+      parameters:
+      - name: namespace
+        value: istio-system
+      - name: airgapRegistry
+        value: $(AIRGAP_REGISTRY-envvar)
+      repoRef:
+        name: manifests
+        path: istio-1-9-0/cluster-local-gateway
+    name: cluster-local-gateway
   - kustomizeConfig:
       repoRef:
         name: manifests
