@@ -3,6 +3,7 @@ from kubernetes import client, config
 import base64
 import sys
 import yaml
+import subprocess
 
 dex_config_secret_name = "dex-config-secret"
 dex_config_secret_namespace = "auth"
@@ -144,12 +145,33 @@ def get_bind_configured(connector: dict, auth_type_info) -> str:
 def get_host_configured(connector : dict):
     print("Preparing host settings...")
 
-    host = secret.data.get("auth_service_locations")
+    auth_service_locations_encoded = secret.data.get("auth_service_locations")
 
-    if not host:
+    if not auth_service_locations_encoded:
         sys.exit("[ERROR]   'auth_service_locations' is not found in secret")
     
-    connector['config']['host'] = b64decode(host)
+    auth_service_locations = b64decode(auth_service_locations_encoded)
+
+    if "::::" in auth_service_locations:
+        print("There are multiple auth locations, detecting available one...")
+        hosts = auth_service_locations.split("::::")
+        host = ""
+        for val in hosts:
+            try:
+                host_info = val.split(':')
+                result = subprocess.run(['nc', host_info[0], host_info[1], '-v', '-w', '15'])
+                if result.returncode == 0:
+                    host = val
+                    break
+            except:
+                print("Couldn't connect to " + val + " AD/LDAP server, trying another location...")
+        if host == "":
+            host = hosts[0]
+        print("Selected " + host + " as auth server")
+    else:
+        host = auth_service_locations
+
+    connector['config']['host'] = host
 
     print("Host settings cofigured!")
 

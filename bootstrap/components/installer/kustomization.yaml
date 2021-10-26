@@ -16,7 +16,7 @@ configMapGenerator:
 images:
   - name: kubernetes
     newName: $(airgapRegistry)gcr.io/mapr-252711/kf-ecp-5.3.0/kubeflow-install
-    newTag: v1.3.0-6be28efe-e3b0c4
+    newTag: latest-dev
 vars:
 - name: airgapRegistry
   objref:
@@ -74,5 +74,19 @@ vars:
     apiVersion: v1
   fieldref:
     fieldpath: data.HTTPS_PROXY
+- name: no_proxy
+  objref:
+    kind: ConfigMap
+    name: kf-installer-parameters
+    apiVersion: v1
+  fieldref:
+    fieldpath: data.NO_PROXY
+- name: VIRTUAL_SERVICE_HTTP_TIMEOUT
+  objref:
+    kind: ConfigMap
+    name: kf-installer-parameters
+    apiVersion: v1
+  fieldref:
+    fieldpath: data.VIRTUAL_SERVICE_HTTP_TIMEOUT
 configurations:
 - params.yaml

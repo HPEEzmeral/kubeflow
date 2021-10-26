@@ -18,7 +18,7 @@ else
         "targetPorts": [
           {
             "importName": "http-80",
-            "targetName": "http-80"
+            "targetName": "http2"
           }
         ]
       }
