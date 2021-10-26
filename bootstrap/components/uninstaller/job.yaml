@@ -27,6 +27,10 @@ spec:
           value: "$(KF_JOBS_NS)"
         - name: DISABLE_ISTIO
           value: "$(DISABLE_ISTIO)"
+        - name: http_proxy
+          value: "$(http_proxy)"
+        - name: https_proxy
+          value: "$(https_proxy)"
       restartPolicy: Never
       volumes:
       - name: entrypoint

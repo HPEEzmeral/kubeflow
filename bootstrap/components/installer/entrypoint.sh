@@ -15,8 +15,6 @@ minio_needs_to_be_installed()
     echo $?
 }
 
-SHOULD_INSTALL_MINIO=$(minio_needs_to_be_installed)
-
 DISABLE_ISTIO=${DISABLE_ISTIO:-false}
 DISABLE_NOTEBOOKSERVERS_LINK=${DISABLE_NOTEBOOKSERVERS_LINK:-false}
 MANIFESTS_LOCATION=${MANIFESTS_LOCATION:-"file://${CURRENT_DIR}/static/manifests.tar.gz"}
@@ -60,11 +58,9 @@ deploy_authservices()
 
 deploy_knative()
 {
-    ./kustomize build ${MANIFESTS_DIR}/common/knative/knative-serving-crds/base | kubectl apply -f - && \
-    ./kustomize build ${MANIFESTS_DIR}/common/knative/knative-serving-install/base | kubectl apply -f - && \
-    ./kustomize build ${MANIFESTS_DIR}/common/knative/knative-eventing-crds/base | kubectl apply -f - && \
-    ./kustomize build ${MANIFESTS_DIR}/bootstrap/components/image-pull-secret/knative-eventing | kubectl apply -f - && \
-    ./kustomize build ${MANIFESTS_DIR}/common/knative/knative-eventing-install/overlays/image-pull-secret | kubectl apply -f -
+    ./kustomize build ${MANIFESTS_DIR}/common/knative/knative-serving/overlays/patches | kubectl apply -f - && \
+    ./kustomize build ${MANIFESTS_DIR}/common/knative/knative-eventing/overlays/image-pull-secret | kubectl apply -f - && \
+    ./kustomize build ${MANIFESTS_DIR}/bootstrap/components/image-pull-secret/knative-eventing | kubectl apply -f -
 }
 
 deploy_cluster_local_gateway()
@@ -79,6 +75,8 @@ deploy_prism()
 
 deploy_kf_services()
 {
+    SHOULD_INSTALL_MINIO=$(minio_needs_to_be_installed)
+
     ./kustomize build ${MANIFESTS_DIR}/common/kubeflow-namespace/base | kubectl apply -f - && \
     ./kustomize build ${MANIFESTS_DIR}/bootstrap/components/image-pull-secret/kubeflow | kubectl apply -f - && \
     ./kustomize build ${MANIFESTS_DIR}/common/kubeflow-roles/base | kubectl apply -f - && \
@@ -102,6 +100,8 @@ deploy_kf_services()
         ./kustomize build ${MANIFESTS_DIR}/apps/centraldashboard/upstream/overlays/disableNotebookServers | kubectl apply -f -
     fi
 
+    export VIRTUAL_SERVICE_HTTP_TIMEOUT=${VIRTUAL_SERVICE_HTTP_TIMEOUT:=""}
+
     ./kustomize build ${MANIFESTS_DIR}/apps/admission-webhook/upstream/overlays/cert-manager | kubectl apply -f - && \
     ./kustomize build ${MANIFESTS_DIR}/apps/jupyter/jupyter-web-app/upstream/overlays/istio | kubectl apply -f - && \
     ./kustomize build ${MANIFESTS_DIR}/apps/jupyter/notebook-controller/upstream/overlays/kubeflow | kubectl apply -f - && \
@@ -115,8 +115,22 @@ deploy_kf_services()
     ./kustomize build ${MANIFESTS_DIR}/apps/mxnet-job/upstream/overlays/kubeflow | kubectl apply -f - && \
     ./kustomize build ${MANIFESTS_DIR}/apps/xgboost-job/upstream/overlays/kubeflow | kubectl apply -f - && \
     ./kustomize build ${MANIFESTS_DIR}/common/user-namespace/base | kubectl apply -f - && \
-    ./kustomize build ${MANIFESTS_DIR}/contrib/application/application-crds/base | kubectl apply -f - && \
-    ./kustomize build ${MANIFESTS_DIR}/contrib/seldon/seldon-core-operator/overlays/application | kubectl apply -f -
+    ./kustomize build ${MANIFESTS_DIR}/contrib/application/application-crds/base | kubectl apply -f -
+}
+
+deploy_seldon()
+{
+    echo "test if seldon is already installed"
+    kubectl get crd | grep seldondeployments.machinelearning.seldon.io
+    ret=$?
+    #workaround `kubectl create`
+    #https://github.com/mapr/private-manifests/pull/120#issuecomment-919416354
+    if [ $ret -eq 0 ]; then
+        ./kustomize build ${MANIFESTS_DIR}/contrib/seldon/seldon-core-operator/overlays/application | kubectl replace -f -
+    else
+        ./kustomize build ${MANIFESTS_DIR}/contrib/seldon/seldon-core-operator/overlays/application | kubectl create -f -
+    fi
+    kubectl get crd | grep seldondeployments.machinelearning.seldon.io
 }
 
 enable_kf_dashboard_url_in_tenant_ui()
@@ -140,10 +154,8 @@ install()
     printf "\nTrying to deploy knative...\n\n"
     while ! deploy_knative; do printf "\n*** Retrying to deploy knative... ***\n\n"; sleep ${RETRY_TIMEOUT}; done
 
-    if [ ${DISABLE_ISTIO} != true ]; then
-        printf "\nTrying to deploy cluster local gateway...\n\n"
-        while ! deploy_cluster_local_gateway; do printf "\n*** Retrying to deploy cluster local gateway... ***\n\n"; sleep ${RETRY_TIMEOUT}; done
-    fi
+    printf "\nTrying to deploy cluster local gateway...\n\n"
+    while ! deploy_cluster_local_gateway; do printf "\n*** Retrying to deploy cluster local gateway... ***\n\n"; sleep ${RETRY_TIMEOUT}; done
 
     printf "\nTrying to deploy kubeflow services...\n\n"
     cur_retries=0
@@ -155,8 +167,11 @@ install()
         printf "\n*** Retrying to deploy kubeflow services... ***\n\n"; sleep ${RETRY_TIMEOUT};
     done
 
+    printf "\nTrying to deploy seldon...\n\n"
+    while ! deploy_seldon; do printf "\n*** Retrying to deploy seldon... ***\n\n"; sleep ${RETRY_TIMEOUT}; done
+
     printf "\nDeploying prism...\n\n"
-    deploy_prism
+    while ! deploy_prism; do printf "\n*** Retrying to deploying prism... ***\n\n"; sleep ${RETRY_TIMEOUT}; done
   
     printf "\nTrying to enable KF URL in tenant UI...\n\n"
     while ! enable_kf_dashboard_url_in_tenant_ui; do printf "\n*** Retrying to enable KF URL in tenant UI... ***\n\n"; sleep ${RETRY_TIMEOUT}; done
@@ -177,8 +192,15 @@ if test_env_vars; then
         printf "\nManifests download failed\n\n"
         exit 1
     fi
+
+    export proxy_http=$http_proxy
+    export proxy_https=$https_proxy
+    export proxy_no=$no_proxy
+    
     unset http_proxy
     unset https_proxy
+    unset no_proxy
+    
     ./kustomize build ${MANIFESTS_DIR}/bootstrap/components/minio-config | kubectl apply -f - -n ${KF_JOBS_NS}
     ./kustomize build ${MANIFESTS_DIR}/bootstrap/components/dex-secret-ldap | kubectl apply -f - -n ${KF_JOBS_NS}
     install

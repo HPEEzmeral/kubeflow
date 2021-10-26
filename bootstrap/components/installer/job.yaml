@@ -33,10 +33,14 @@ spec:
           value: "$(http_proxy)"
         - name: https_proxy
           value: "$(https_proxy)"
+        - name: no_proxy
+          value: "$(no_proxy)"
         - name: AIRGAP_REGISTRY
           value: "$(airgapRegistry)"
         - name: USER_AIRGAP_REGISTRY
           value: "$(userAirgapRegistry)"
+        - name: VIRTUAL_SERVICE_HTTP_TIMEOUT
+          value: "$(VIRTUAL_SERVICE_HTTP_TIMEOUT)"
       restartPolicy: Never
       volumes:
       - name: entrypoint
