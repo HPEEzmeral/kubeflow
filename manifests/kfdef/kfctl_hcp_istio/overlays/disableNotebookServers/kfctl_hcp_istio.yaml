@@ -111,25 +111,25 @@ spec:
         name: manifests
         path: istio/oidc-authservice
     name: oidc-authservice
-  - kustomizeConfig:
-      overlays:
-      - istio
-      - config-secret
-      parameters:
-      - name: namespace
-        value: auth
-      - name: issuer
-        value: http://dex.auth.svc.cluster.local:5556/dex
-      - name: client_id
-        value: kubeflow-oidc-authservice
-      - name: oidc_redirect_uris
-        value: '["/login/oidc"]'
-      - name: airgapRegistry
-        value: $(AIRGAP_REGISTRY-envvar)
-      repoRef:
-        name: manifests
-        path: dex-auth/dex-crds
-    name: dex
+  # - kustomizeConfig:
+  #     overlays:
+  #     - istio
+  #     - config-secret
+  #     parameters:
+  #     - name: namespace
+  #       value: auth
+  #     - name: issuer
+  #       value: http://dex.auth.svc.cluster.local:5556/dex
+  #     - name: client_id
+  #       value: kubeflow-oidc-authservice
+  #     - name: oidc_redirect_uris
+  #       value: '["/login/oidc"]'
+  #     - name: airgapRegistry
+  #       value: $(AIRGAP_REGISTRY-envvar)
+  #     repoRef:
+  #       name: manifests
+  #       path: dex-auth/dex-crds
+  #   name: dex
   - kustomizeConfig:
       parameters:
       - name: airgapRegistry
