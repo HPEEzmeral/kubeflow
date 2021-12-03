@@ -20,7 +20,6 @@ uninstall()
     cd "${KFCTL_HOME}/bootstrap/"
     kubectl delete -k ./components/hpecpconfig-patch/
     kubectl delete -k ../manifests/kfdef/kfctl_hcp_istio/base/
-    kubectl delete -k ./components/dex-secret-ldap/
     kubectl delete -k ./base/
 }
 
