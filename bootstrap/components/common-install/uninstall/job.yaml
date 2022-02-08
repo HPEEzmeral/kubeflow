@@ -1,0 +1,60 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kf-uninstaller
+spec:
+  template:
+    spec:
+      imagePullSecrets:
+      - name: hpe-imagepull-secrets
+      serviceAccountName: kf-installer
+      containers:
+      - name: script
+        image: kubernetes
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/bash"]
+        args:
+        - "/mnt/entrypoint/entrypoint.sh"
+        volumeMounts:
+        - mountPath: /mnt/entrypoint/process_service_resources.sh
+          name: kf-common-vol
+          subPath: process_service_resources.sh
+        - mountPath: /mnt/entrypoint/entrypoint.sh
+          name: entrypoint-vol
+          subPath: entrypoint.sh
+        - mountPath: /usr/share/ca-certificates/kf-jobs
+          name: cert
+        env:
+        - name: MANIFESTS_LOCATION
+          value: "$(MANIFESTS_LOCATION)"
+        - name: KF_JOBS_NS
+          value: "$(KF_JOBS_NS)"
+        - name: DISABLE_ISTIO
+          value: "$(DISABLE_ISTIO)"
+        - name: DISABLE_SELDON
+          value: "$(DISABLE_SELDON)"
+        - name: http_proxy
+          value: "$(http_proxy)"
+        - name: https_proxy
+          value: "$(https_proxy)"
+        - name: no_proxy
+          value: "$(no_proxy)"
+        - name: ISTIO_DIR
+          value: "$(ISTIO_DIR)"
+      restartPolicy: Never
+      volumes:
+      - name: entrypoint-vol
+        configMap:
+          name: kf-installer
+      - name: kf-common-vol
+        configMap:
+          name: kf-common
+      - name: cert
+        secret:
+          secretName: kf-jobs-cert-secret
+          optional: true
+          items:
+            - key: tls.crt
+              path: kf-jobs-tls.crt
+            - key: tls.key
+              path: kf-jobs-tls.key

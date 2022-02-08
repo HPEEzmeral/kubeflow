@@ -1,0 +1,70 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kf-installer
+spec:
+  template:
+    spec:
+      imagePullSecrets:
+      - name: hpe-imagepull-secrets
+      serviceAccountName: kf-installer
+      containers:
+      - name: script
+        image: kubernetes
+        imagePullPolicy: Always
+        command: ["/bin/bash"]
+        args:
+        - "/mnt/entrypoint/entrypoint.sh"
+        volumeMounts:
+        - mountPath: /mnt/entrypoint/process_service_resources.sh
+          name: kf-common-vol
+          subPath: process_service_resources.sh
+        - mountPath: /mnt/entrypoint/entrypoint.sh
+          name: entrypoint-vol
+          subPath: entrypoint.sh
+        - mountPath: /usr/share/ca-certificates/kf-jobs
+          name: cert
+        env:
+        - name: DISABLE_ISTIO
+          value: "$(DISABLE_ISTIO)"
+        - name: DISABLE_DEX
+          value: "$(DISABLE_DEX)"
+        - name: DISABLE_SELDON
+          value: "$(DISABLE_SELDON)"
+        - name: MANIFESTS_LOCATION
+          value: "$(MANIFESTS_LOCATION)"
+        - name: KF_JOBS_NS
+          value: "$(KF_JOBS_NS)"
+        - name: DISABLE_NOTEBOOKSERVERS_LINK
+          value: "$(DISABLE_NOTEBOOKSERVERS_LINK)"
+        - name: http_proxy
+          value: "$(http_proxy)"
+        - name: https_proxy
+          value: "$(https_proxy)"
+        - name: no_proxy
+          value: "$(no_proxy)"
+        - name: AIRGAP_REGISTRY
+          value: "$(airgapRegistry)"
+        - name: USER_AIRGAP_REGISTRY
+          value: "$(userAirgapRegistry)"
+        - name: VIRTUAL_SERVICE_HTTP_TIMEOUT
+          value: "$(VIRTUAL_SERVICE_HTTP_TIMEOUT)"
+        - name: ISTIO_DIR
+          value: "$(ISTIO_DIR)"
+      restartPolicy: Never
+      volumes:
+      - name: entrypoint-vol
+        configMap:
+          name: kf-installer
+      - name: kf-common-vol
+        configMap:
+          name: kf-common
+      - name: cert
+        secret:
+          secretName: kf-jobs-cert-secret
+          optional: true
+          items:
+            - key: tls.crt
+              path: kf-jobs-tls.crt
+            - key: tls.key
+              path: kf-jobs-tls.key
