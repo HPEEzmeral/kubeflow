@@ -1,14 +1,7 @@
 #!/bin/sh
-# set -e
 
-. /mnt/entrypoint/process_service_resources.sh
-
-KUBE_CMD="delete"
 PORT="8001"
 MAX_RETRIES=5
-
-DISABLE_DEX=${DISABLE_DEX:-false}
-DISABLE_SELDON=${DISABLE_SELDON:-false}
 
 get_free_port()
 #return free/unused network port in range from $1 to $2
@@ -16,39 +9,17 @@ get_free_port()
     PORT=$(comm -23 <(seq ${1:-8001} ${2:-8010}) <(ss -Htan | awk '{print $4}' | cut -d':' -f2 | sort) | head -n 1)
 }
 
-test_env_vars()
-{
-    local ret_val=0
-
-    if [ ${DISABLE_ISTIO} != true -a ${DISABLE_ISTIO} != false ]; then
-        echo 'DISABLE_ISTIO should be unset or set to either "true" or "false".'
-        ret_val=1
-    fi
-
-    if [ ${DISABLE_DEX} != true -a ${DISABLE_DEX} != false ]; then
-        echo 'DISABLE_DEX should be unset or set to either "true" or "false".'
-        ret_val=1
-    fi
-
-    if [ ${DISABLE_SELDON} != true -a ${DISABLE_SELDON} != false ]; then
-        echo 'DISABLE_SELDON should be unset or set to either "true" or "false".'
-        ret_val=1
-    fi
-
-    return $ret_val
-}
-
 delete_cert_manager()
 {
     if namespace_exists cert-manager ; then 
-        process_service_resources common/cert-manager/cert-manager/base \
-                                  common/cert-manager/kubeflow-issuer/base
+        process_service_resources common/cert-manager/kubeflow-issuer/base \
+				  common/cert-manager/cert-manager/base
     fi
 }
 
 delete_istio()
 {
-    if  namespace_exists istio-system ; then 
+    if namespace_exists istio-system ; then
         process_service_resources common/${ISTIO_DIR}/istio-install/base \
                                   common/${ISTIO_DIR}/istio-namespace/base \
                                   common/${ISTIO_DIR}/istio-crds/base
@@ -81,9 +52,9 @@ delete_cluster_local_gateway()
 
 delete_prism()
 {
-    if namespace_exists prism ; then
+    if namespace_exists prism-ns ; then
         process_service_resources bootstrap/components/image-pull-secret/prism
-        ./kustomize build ${MANIFESTS_DIR}/apps/prism/overlays/image-pull-secret | timeout 20s kubectl delete -f -
+        $KUSTOMIZE build ${MANIFESTS_DIR}/apps/prism/overlays/image-pull-secret | timeout 20s kubectl delete -f -
         kubectl patch crd/hpecpmodeldefaults.deployment.hpe.com -p '{"metadata":{"finalizers":[]}}' --type=merge
     fi
 }
@@ -95,7 +66,6 @@ delete_seldon()
 
 delete_kf_services()
 {
-    MAINFESTS_DIR=${0}
     process_service_resources contrib/application/application-crds/base \
                               common/user-namespace/base
 
@@ -135,7 +105,7 @@ delete_kf_services()
 
 delete_kf_url()
 {
-    KUBE_NAMESPACE=${KF_JOBS_NS} process_service_resources bootstrap/components/hpecpconfig-patch
+    process_service_resources -n ${KF_JOBS_NS} bootstrap/components/hpecpconfig-patch
 }
 
 force_delete_ns()
@@ -153,20 +123,20 @@ force_delete_ns()
 
     kubectl get ns "$NAMESPACE" 2> /dev/null
     if [ "$?" != 0 ]; then
-        echo "*      Failed: Namespaces $NAMESPACE not found\n"
+        echo "*      Failed: Namespaces $NAMESPACE not found"
         err=1
     fi
 
     kubectl get ns --field-selector status.phase=Active | grep "$NAMESPACE" 2> /dev/null
-    if [ "$?" == 0 ]; then
+    if [ "$?" = 0 ]; then
         timeout 5s kubectl delete ns "$NAMESPACE" 2>/dev/null
         echo "*      Namespace $NAMESPACE deleted\n"
         sleep 5
     fi
 
     kubectl get ns "$NAMESPACE" 2> /dev/null
-    if [ "$?" == 0 ]; then
-        if [ "$err" == 0 ]; then
+    if [ "$?" = 0 ]; then
+        if [ "$err" = 0 ]; then
             get_free_port
             kubectl proxy --port=$PORT &
             local PROXY_PID=$!
@@ -179,13 +149,13 @@ force_delete_ns()
             fi
         fi
 
-        if [ "$err" == 0 ]; then
+        if [ "$err" = 0 ]; then
             kubectl get ns --field-selector status.phase=Terminating | grep "$NAMESPACE"
-            if [ "$?" == 0 ]; then
+            if [ "$?" = 0 ]; then
                 printf "*      Send request to delete stucked namespace finalizer.\n"
                 kubectl get namespace $NAMESPACE -o json | jq '.spec = {"finalizers":[]}' >temp.json
-                curl -k -H "Content-Type: application/json" -X PUT --data-binary @temp.json  127.0.0.1:$PORT/api/v1/namespaces/$NAMESPACE/finalize
-                printf "*      Namespace $NAMESPACE was deleted successfully!"
+                curl -k -H "Content-Type: application/json" -X PUT --data-binary @temp.json  127.0.0.1:$PORT/api/v1/namespaces/$NAMESPACE/finalize >/dev/null
+                printf "\n*      Namespace $NAMESPACE was deleted successfully!\n"
             fi
             sleep 2
             kill $PROXY_PID
@@ -193,7 +163,7 @@ force_delete_ns()
         fi
     fi
 
-    if [ "$err" == 0 ]; then
+    if [ "$err" = 0 ]; then
         printf "****** force_delete_ns function for namespace $1 DONE\n\n"
     else
         printf "****** force_delete_ns function for namespace $1 FAILED\n\n"
@@ -202,16 +172,13 @@ force_delete_ns()
 }
 
 uninstall() {
+    KUBE_CMD="delete"
     delete_kf_url
 
-    printf "\nDeleting prism...\n\n"
     delete_prism
-    sleep 10
-    echo $(kubectl get ns prism-ns)
-    while kubectl get ns prism-ns ; do
+    sleep 15
+    while kubectl get ns prism-ns >/dev/null 2>&1 ; do
         force_delete_ns prism-ns
-        printf "\n***                                                                                                                                                                                    
-    	Retrying to delete prism ... ***\n\n";
         delete_prism
     done
 
@@ -220,35 +187,20 @@ uninstall() {
     fi
     
     delete_kf_services
-    delete_cluster_local_gateway
+
+    if [ ${DISABLE_ISTIO} != true ]; then
+        delete_cluster_local_gateway
+    fi
+    
     delete_knative
     delete_authservices
-    delete_istio
+
+    if [ ${DISABLE_ISTIO} != true ] ; then
+        delete_istio
+    fi
+    
     delete_cert_manager
-    KUBE_NAMESPACE="${KF_JOBS_NS}" process_service_resources bootstrap/components/dex-secret-ldap
-    KUBE_NAMESPACE="${KF_JOBS_NS}" process_service_resources bootstrap/components/minio-config
+
+    process_service_resources -n ${KF_JOBS_NS} bootstrap/components/dex-secret-ldap
+    process_service_resources -n ${KF_JOBS_NS} bootstrap/components/minio-config
 }
-
-if test_env_vars; then
-    if [ -r /usr/share/ca-certificates/kf-jobs/kf-jobs-tls.crt ]; then
-        update-ca-certificates
-        curl --cacert /usr/share/ca-certificates/kf-jobs/kf-jobs-tls.crt -Lo ${MANIFESTS_DIR}.tar.gz ${MANIFESTS_LOCATION}
-    else
-        curl -Lo ${MANIFESTS_DIR}.tar.gz ${MANIFESTS_LOCATION}
-    fi
-
-    mkdir manifests
-    if tar -xf ${MANIFESTS_DIR}.tar.gz -C ${MANIFESTS_DIR} --strip-components 1; then
-        printf "\nManifests downloaded successfully to $(pwd)\n\n"
-    else
-        printf "\nManifests download failed\n\n"
-        exit 1
-    fi
-
-    uninstall
-    echo "kubeflow uninstall script finished done."
-    exit 0
-else
-    echo "kubeflow uninstall script failed."
-    exit 1
-fi

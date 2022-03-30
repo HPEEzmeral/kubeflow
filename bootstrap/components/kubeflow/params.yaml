@@ -1,0 +1,13 @@
+varReference:
+- path: spec/template/spec/containers/image
+  kind: Deployment
+- path: spec/template/spec/initContainers/image
+  kind: Deployment
+- path: spec/template/spec/initContainers/volumeMounts/mountPath
+  kind: Deployment
+- path: spec/template/spec/containers/volumeMounts/mountPath
+  kind: Deployment
+- path: spec/template/spec/containers/args
+  kind: Deployment
+- path: subjects/namespace
+  kind: ClusterRoleBinding
