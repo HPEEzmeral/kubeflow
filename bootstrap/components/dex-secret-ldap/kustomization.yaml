@@ -18,7 +18,7 @@ configMapGenerator:
 images:
   - name: kubernetes-python
     newName: $(AIRGAP_REGISTRY-env)gcr.io/mapr-252711/kubeflow/python-k8s
-    newTag: v1.4.0-gl-v1
+    newTag: v1.4.0-gl-2
 vars:
 - name: AIRGAP_REGISTRY-env
   objref:

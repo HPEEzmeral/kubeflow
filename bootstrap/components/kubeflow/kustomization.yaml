@@ -1,0 +1,60 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- sa.yaml
+- cr.yaml
+- crb.yaml
+- ips.yaml
+- dep.yaml
+- config.yaml
+- pvc.yaml
+generatorOptions:
+ disableNameSuffixHash: true
+configMapGenerator:
+- name: init
+  files:
+  - init.sh
+- name: kf-installer-parameters
+  env: params.env
+images:
+  - name: kubeflow-installer
+    newName: $(airgapRegistry)$(KF_INSTALLER_IMAGE)
+    newTag: $(KF_INSTALLER_IMAGE_TAG)
+vars:
+- name: airgapRegistry
+  objref:
+    kind: ConfigMap
+    name: kf-installer-parameters
+    apiVersion: v1
+  fieldref:
+    fieldpath: data.AIRGAP_REGISTRY
+- name: KF_JOBS_NS
+  objref:
+    kind: ConfigMap
+    name: kf-installer-parameters
+    apiVersion: v1
+  fieldref:
+    fieldpath: data.KF_JOBS_NS
+- name: KF_INSTALLER_IMAGE
+  objref:
+    kind: ConfigMap
+    name: kf-installer-parameters
+    apiVersion: v1
+  fieldref:
+    fieldpath: data.KF_INSTALLER_IMAGE
+- name: KF_INSTALLER_IMAGE_TAG
+  objref:
+    kind: ConfigMap
+    name: kf-installer-parameters
+    apiVersion: v1
+  fieldref:
+    fieldpath: data.KF_INSTALLER_IMAGE_TAG
+- name: manifestsMountPath
+  objref:
+    kind: ConfigMap
+    name: kf-installer-parameters
+    apiVersion: v1
+  fieldref:
+    fieldpath: data.MANIFESTS_MOUNT_PATH
+configurations:
+- params.yaml

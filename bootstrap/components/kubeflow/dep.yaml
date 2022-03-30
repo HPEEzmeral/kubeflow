@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kf-installer
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      name: kf-installer
+  template:
+    metadata:
+      labels:
+        name: kf-installer
+    spec:
+      imagePullSecrets:
+      - name: hpe-imagepull-secrets
+      serviceAccountName: kf-installer
+      initContainers:
+      - name: init
+        image: kubeflow-installer
+        imagePullPolicy: Always
+        envFrom:
+          - configMapRef:
+              name: kf-installer-parameters
+        volumeMounts:
+          - name: manifests
+            mountPath: $(manifestsMountPath)
+          - name: init
+            mountPath: /mnt/entrypoint/init.sh
+            subPath: init.sh
+        command: ["/bin/bash"]
+        args:
+          - "/mnt/entrypoint/init.sh"
+      containers:
+      - name: operator
+        image: kubeflow-installer
+        imagePullPolicy: Always
+        command: ["/bin/bash"]
+        args:
+          - "$(manifestsMountPath)/bootstrap/components/kubeflow/entrypoint.sh"
+        volumeMounts:
+        - name: manifests
+          mountPath: $(manifestsMountPath)
+        - name: cert
+          mountPath: /usr/share/ca-certificates/kf-jobs
+        envFrom:
+          - configMapRef:
+              name: kf-installer-parameters
+      restartPolicy: Always
+      volumes:
+      - name: manifests
+        persistentVolumeClaim:
+          claimName: kf-installer-manifests
+      - name: init
+        configMap:
+          name: init
+      - name: cert
+        secret:
+          secretName: kf-jobs-cert-secret
+          optional: true
+          items:
+            - key: tls.crt
+              path: kf-jobs-tls.crt
+            - key: tls.key
+              path: kf-jobs-tls.key
