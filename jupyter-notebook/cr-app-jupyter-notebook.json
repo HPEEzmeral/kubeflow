@@ -1,0 +1,91 @@
+{
+    "apiVersion": "kubedirector.hpe.com/v1beta1",
+    "kind": "KubeDirectorApp",
+    "metadata": {
+        "name": "jupyter-notebook",
+        "annotations": {
+            "kubedirector.hpe.com/requiredSecretNames" : "hpecp-ext-auth-secret"
+          },
+        "labels": {
+            "kubedirector.hpe.com/AIML_category": "Notebook"
+        }
+    },
+    "spec": {
+        "logoURL": "https://raw.githubusercontent.com/bluedatainc/solutions/master/MLOps/logos/jupyter-notebook-logo.png",
+        "systemdRequired": true,
+        "config": {
+            "roleServices": [
+                {
+                    "serviceIDs": [
+                        "ssh",
+                        "jupyter-nb"
+                    ],
+                    "roleID": "controller"
+                }
+            ],
+            "selectedRoles": [
+                "controller"
+            ]
+        },
+        "label": {
+            "name": "Jupyter Notebook with ML toolkits",
+            "description": "Toolkits: TensorFlow, Scikit-Learn, PyTorch, Keras, XGBoost, LightGBM, Hyperopt; Core: Numpy, Scipy, Pandas, StatsModels, Anaconda, R kernel, Flask, Jupyter Notebook, Git, Jenkins; Visualization: Matplotlib, Seaborn, Plotly, Bokeh",
+            "AIML_category": "Notebook"
+        },
+        "distroID": "hpecp/jupyter-notebook",
+        "version": "3.1",
+        "configSchemaVersion": 7,
+        "services": [
+            {
+                "endpoint": {
+                    "port": 22,
+                    "isDashboard": false
+                },
+                "id": "ssh",
+                "label": {
+                    "name": "SSH"
+                }
+            },
+            {
+                "endpoint": {
+                    "urlScheme": "http",
+                    "path": "/",
+                    "isDashboard": true,
+                    "port": 8000
+                },
+                "id": "jupyter-nb",
+                "label": {
+                    "name": "Jupyter Notebook"
+                }
+            }
+        ],
+        "defaultConfigPackage": {
+            "packageURL": "file:///opt/configscript/appconfig.tgz"
+        },
+        "roles": [
+            {
+                "imageRepoTag": "bluedata/kd-notebook:3.2",
+                "cardinality": "1",
+                "id": "controller",
+                "minStorage": {
+                    "size": "10Gi",
+                    "ephemeralModeSupported": true
+                },
+                "persistDirs": [
+                    "/home",
+                    "/opt/bluedata/hadoop-2.8.5/etc/hadoop",
+                    "/opt/bluedata/hadoop-2.8.5/share/hadoop/hdfs",
+                    "/opt/miniconda/share/jupyterhub/templates",
+                    "/opt/miniconda/share/jupyter/kernels/ir",
+                    "/opt/miniconda/share/jupyter/kernels/python3",
+                    "/opt/miniconda/envs/python-3.6-adpated/lib/python3.6/site-packages/IPython/extensions",
+                    "/opt/miniconda/envs/python-3.6-adpated/etc/ipython",
+                    "/opt/miniconda/etc",
+                    "/opt/miniconda/lib/python3.8/site-packages/ecpssoauth",
+                    "/var/log/bluedata",
+                    "/opt/miniconda/lib/python3.8/site-packages/IPython/extensions"
+                ]
+            }
+        ]
+    }
+}
