@@ -13,6 +13,12 @@ if [ -r /usr/share/ca-certificates/kf-jobs/kf-jobs-tls.crt ]; then
     ca_cert_options="--cacert /usr/share/ca-certificates/kf-jobs/kf-jobs-tls.crt"
 fi
 
+if ! echo $MANIFESTS_LOCATION | grep -q '^file://'; then
+    if [ -z "$http_proxy" ] || [ -z "$https_proxy" ]; then
+        printf "\nWarning! Variables http_proxy and https_proxy are not set! This might cause problems for downloading manifests in proxy environment\n\n"
+    fi
+fi
+
 if curl ${ca_cert_options} -Lo manifests.tar.gz ${MANIFESTS_LOCATION}; then
     printf "\nManifests get successfully from ${MANIFESTS_LOCATION}\n\n"
 else
@@ -22,7 +28,7 @@ fi
 if tar -xf manifests.tar.gz -C ${MANIFESTS_MOUNT_PATH} --strip-components 1; then
     printf "\nManifests extracted successfully to ${MANIFESTS_MOUNT_PATH}\n\n"
 else
-    printf "\nManifests extracted failed\n\n"
+    printf "\nManifests extraction failed\n\n"
     exit 1
 fi
 

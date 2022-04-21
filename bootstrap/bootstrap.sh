@@ -137,11 +137,11 @@ run_kubeflow_installer(){
         echo "To run bash in the pod run:"
         echo "kubectl exec --stdin --tty -n $KF_JOBS_NS $Pod_name -- /bin/bash"
 
-        Retries=60
-        Timeout=20
+        Retries=240
+        Timeout=5
         printf "\nWaiting for kubeflow to be ${Command}ed"
         while [ $(get_config_value "running") != "false" ] && \
-                  [ $(get_config_value "error") != "true" ]
+              [ $(get_config_value "error") != "true" ]
         do
             printf "."
             Retries=$(( Retries - 1 ))
@@ -173,8 +173,7 @@ run_kubeflow_installer(){
 }
 
 is_command_valid(){
-    if [ "$1" = "install" ] ||
-           [ "$1" = "uninstall" ] ; then
+    if [ "$1" = "install" ] || [ "$1" = "uninstall" ] ; then
         return 0
     elif [ -z "$1" ]; then
         echo "Kubeflow bootstrap command is empty"
@@ -189,4 +188,7 @@ is_command_valid(){
 Command="$1"
 if [ -n "${Command:+true}" ] && is_command_valid "$Command"; then
     run_kubeflow_installer "$Command"
+    if [ $Command = "uninstall" ] ; then
+        kubectl delete ns $KF_JOBS_NS
+    fi;
 fi

@@ -54,7 +54,7 @@ delete_prism()
 {
     if namespace_exists prism-ns ; then
         process_service_resources bootstrap/components/image-pull-secret/prism
-        $KUSTOMIZE build ${MANIFESTS_DIR}/apps/prism/overlays/image-pull-secret | timeout 20s kubectl delete -f -
+        process_service_resources -t 20s apps/prism/overlays/image-pull-secret
         kubectl patch crd/hpecpmodeldefaults.deployment.hpe.com -p '{"metadata":{"finalizers":[]}}' --type=merge
     fi
 }
@@ -69,18 +69,14 @@ delete_kf_services()
     process_service_resources contrib/application/application-crds/base \
                               common/user-namespace/base
 
-    process_service_resources apps/xgboost-job/upstream/overlays/kubeflow \
-                              apps/mxnet-job/upstream/overlays/kubeflow \
-                              apps/mpi-job/upstream/overlays/kubeflow \
-                              apps/pytorch-job/upstream/overlays/kubeflow 
-
-    process_service_resources apps/tf-training/upstream/overlays/kubeflow
+    process_service_resources apps/mpi-job/upstream/overlays/kubeflow
     
     process_service_resources apps/tensorboard/tensorboards-web-app/upstream/overlays/istio \
                               apps/tensorboard/tensorboard-controller/upstream/overlays/kubeflow
     
     process_service_resources apps/volumes-web-app/upstream/overlays/istio
-    
+
+    delete_kubeflow_profiles
     process_service_resources apps/profiles/upstream/overlays/kubeflow
 
     process_service_resources apps/jupyter/notebook-controller/upstream/overlays/kubeflow \
@@ -101,6 +97,15 @@ delete_kf_services()
                               common/kubeflow-roles/base \
                               common/kubeflow-namespace/base
     return 0
+}
+
+delete_kubeflow_profiles() {
+    printf  "\n******* Started deleting Kubeflow profiles.. *\n\n"
+    for profile in $(kubectl get profiles -o name); do
+        if [ $(kubectl get $profile -o jsonpath='{.metadata.finalizers}' | grep "profile-finalizer") ]; then
+            kubectl delete $profile
+        fi;
+    done
 }
 
 delete_kf_url()
@@ -201,6 +206,8 @@ uninstall() {
     
     delete_cert_manager
 
-    process_service_resources -n ${KF_JOBS_NS} bootstrap/components/dex-secret-ldap
+    if [ ${DISABLE_DEX} != true ] ; then
+        process_service_resources -n ${KF_JOBS_NS} bootstrap/components/dex-secret-ldap
+    fi
     process_service_resources -n ${KF_JOBS_NS} bootstrap/components/minio-config
 }

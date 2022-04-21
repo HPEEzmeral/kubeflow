@@ -109,7 +109,9 @@ install()
 {
     KUBE_CMD="apply"
     process_service_resources -n ${KF_JOBS_NS} bootstrap/components/minio-config
-    process_service_resources -n ${KF_JOBS_NS} bootstrap/components/dex-secret-ldap
+    if [ ${DISABLE_DEX} != true ]; then
+        process_service_resources -n ${KF_JOBS_NS} bootstrap/components/dex-secret-ldap
+    fi
 
     MAX_RETRIES=8 deploy_cert_manager
 
