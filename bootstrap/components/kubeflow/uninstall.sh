@@ -50,12 +50,27 @@ delete_cluster_local_gateway()
     process_service_resources common/${ISTIO_DIR}/cluster-local-gateway/base
 }
 
+delete_prism_modeldefaults() {
+    printf  "\n******* Started deleting Prism HPECPModelDefaults.. *\n\n"
+
+    local PRISM_NS="prism-ns"
+    local model_defs=$(kubectl get hpecpmodeldefaults -n $PRISM_NS -o name)
+
+    if [ -z $model_defs ] ; then
+        printf "No HPECPModelDefaults are found in $PRISM_NS namespace"
+    else
+        for model_def in $model_defs; do
+            kubectl delete $model_def -n $PRISM_NS
+        done;
+    fi
+}
+
 delete_prism()
 {
     if namespace_exists prism-ns ; then
+        delete_prism_modeldefaults
         process_service_resources bootstrap/components/image-pull-secret/prism
-        process_service_resources -t 20s apps/prism/overlays/image-pull-secret
-        kubectl patch crd/hpecpmodeldefaults.deployment.hpe.com -p '{"metadata":{"finalizers":[]}}' --type=merge
+        process_service_resources apps/prism/overlays/image-pull-secret
     fi
 }
 
@@ -198,7 +213,9 @@ uninstall() {
     fi
     
     delete_knative
-    delete_authservices
+    if [ ${DISABLE_DEX} != true ] ; then
+    	delete_authservices
+    fi
 
     if [ ${DISABLE_ISTIO} != true ] ; then
         delete_istio
