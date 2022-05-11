@@ -2,13 +2,12 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: dex-secret-generator
-  namespace: kubeflow-operator
 spec:
   template:
     spec:
       imagePullSecrets:
         - name: hpe-imagepull-secrets
-      serviceAccountName: kubeflow-operator
+      serviceAccountName: dex-secret-generator
       containers:
         - name: script
           image: kubernetes-python

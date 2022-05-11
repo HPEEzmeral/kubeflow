@@ -3,12 +3,15 @@ from kubernetes import client, config
 import base64
 import sys
 import yaml
+import subprocess
 
 dex_config_secret_name = "dex-config-secret"
 dex_config_secret_namespace = "auth"
+dex_config_secret_bind_pw = "AUTH_SECRET_BIND_PW"
 
 auth_secret_name = os.environ["AUTH_SECRET_NAME"] if "AUTH_SECRET_NAME" in os.environ and os.environ["AUTH_SECRET_NAME"] else "hpecp-ext-auth-secret"
 auth_secret_namespace = os.environ["AUTH_SECRET_NAMESPACE"] if "AUTH_SECRET_NAMESPACE" in os.environ and os.environ["AUTH_SECRET_NAMESPACE"] else "hpecp"
+auth_secret_bind_pw = ''
 
 __location__ = os.path.realpath(
     os.path.join(os.getcwd(), os.path.dirname(__file__)))
@@ -131,21 +134,44 @@ def get_bind_configured(connector: dict, auth_type_info) -> str:
         sys.exit("[ERROR]   'bind_pwd' is not found in secret")
     
     bind_pw = b64decode(bind_pw)
-
     connector['config']['bindDN'] = bind_dn
-    connector['config']['bindPW'] = bind_pw
+    connector['config']['bindPW'] = '$' + dex_config_secret_bind_pw
+
+    global auth_secret_bind_pw
+    auth_secret_bind_pw = bind_pw
 
     print("Bind settings cofigured!")
 
 def get_host_configured(connector : dict):
     print("Preparing host settings...")
 
-    host = secret.data.get("auth_service_locations")
+    auth_service_locations_encoded = secret.data.get("auth_service_locations")
 
-    if not host:
+    if not auth_service_locations_encoded:
         sys.exit("[ERROR]   'auth_service_locations' is not found in secret")
     
-    connector['config']['host'] = b64decode(host)
+    auth_service_locations = b64decode(auth_service_locations_encoded)
+
+    if "::::" in auth_service_locations:
+        print("There are multiple auth locations, detecting available one...")
+        hosts = auth_service_locations.split("::::")
+        host = ""
+        for val in hosts:
+            try:
+                host_info = val.split(':')
+                result = subprocess.run(['nc', host_info[0], host_info[1], '-v', '-w', '15'])
+                if result.returncode == 0:
+                    host = val
+                    break
+            except:
+                print("Couldn't connect to " + val + " AD/LDAP server, trying another location...")
+        if host == "":
+            host = hosts[0]
+        print("Selected " + host + " as auth server")
+    else:
+        host = auth_service_locations
+
+    connector['config']['host'] = host
 
     print("Host settings cofigured!")
 
@@ -280,7 +306,8 @@ v1.create_namespaced_secret(
         ),
         type="Opaque",
         data={
-            "config.yaml" : b64encode(yaml.dump(config))
+            "config.yaml" : b64encode(yaml.dump(config)),
+            "AUTH_SECRET_BIND_PW" : b64encode(auth_secret_bind_pw)
         },
     )
 )

@@ -1,0 +1,49 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kf-uninstaller
+spec:
+  template:
+    spec:
+      imagePullSecrets:
+      - name: hpe-imagepull-secrets
+      serviceAccountName: kf-uninstaller
+      containers:
+      - name: script
+        image: kubernetes
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/bash"]
+        args:
+        - "/mnt/entrypoint/entrypoint.sh"
+        volumeMounts:
+        - mountPath: /mnt/entrypoint
+          name: entrypoint
+        - mountPath: /usr/share/ca-certificates/kf-jobs
+          name: cert
+        env:
+        - name: MANIFESTS_LOCATION
+          value: "$(MANIFESTS_LOCATION)"
+        - name: KF_JOBS_NS
+          value: "$(KF_JOBS_NS)"
+        - name: DISABLE_ISTIO
+          value: "$(DISABLE_ISTIO)"
+        - name: http_proxy
+          value: "$(http_proxy)"
+        - name: https_proxy
+          value: "$(https_proxy)"
+        - name: no_proxy
+          value: "$(no_proxy)"
+      restartPolicy: Never
+      volumes:
+      - name: entrypoint
+        configMap:
+          name: kf-uninstaller
+      - name: cert
+        secret:
+          secretName: kf-jobs-cert-secret
+          optional: true
+          items:
+            - key: tls.crt
+              path: kf-jobs-tls.crt
+            - key: tls.key
+              path: kf-jobs-tls.key

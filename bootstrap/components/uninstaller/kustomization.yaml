@@ -1,0 +1,71 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- sa.yaml
+- cr.yaml
+- crb.yaml
+- job.yaml
+generatorOptions:
+ disableNameSuffixHash: true
+configMapGenerator:
+- name: kf-uninstaller
+  files:
+  - entrypoint.sh
+- name: kf-uninstaller-parameters
+  env: params.env
+images:
+  - name: kubernetes
+    newName: $(airgapRegistry)gcr.io/mapr-252711/kf-ecp-5.3.0/kubeflow-install
+    newTag: ecp-5.4.0-release
+vars:
+- name: airgapRegistry
+  objref:
+    kind: ConfigMap
+    name: kf-uninstaller-parameters
+    apiVersion: v1
+  fieldref:
+    fieldpath: data.AIRGAP_REGISTRY
+- name: KF_JOBS_NS
+  objref:
+    kind: ConfigMap
+    name: kf-uninstaller-parameters
+    apiVersion: v1
+  fieldref:
+    fieldpath: data.KF_JOBS_NS
+- name: MANIFESTS_LOCATION
+  objref:
+    kind: ConfigMap
+    name: kf-uninstaller-parameters
+    apiVersion: v1
+  fieldref:
+    fieldpath: data.MANIFESTS_LOCATION
+- name: DISABLE_ISTIO
+  objref:
+    kind: ConfigMap
+    name: kf-uninstaller-parameters
+    apiVersion: v1
+  fieldref:
+    fieldpath: data.DISABLE_ISTIO
+- name: http_proxy
+  objref:
+    kind: ConfigMap
+    name: kf-uninstaller-parameters
+    apiVersion: v1
+  fieldref:
+    fieldpath: data.HTTP_PROXY
+- name: https_proxy
+  objref:
+    kind: ConfigMap
+    name: kf-uninstaller-parameters
+    apiVersion: v1
+  fieldref:
+    fieldpath: data.HTTPS_PROXY
+- name: no_proxy
+  objref:
+    kind: ConfigMap
+    name: kf-uninstaller-parameters
+    apiVersion: v1
+  fieldref:
+    fieldpath: data.NO_PROXY
+configurations:
+- params.yaml

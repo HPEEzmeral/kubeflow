@@ -1,0 +1,60 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: copy-job
+spec:
+  template:
+    spec:
+      volumes:
+        - name: entrypoint
+          configMap:
+            name: copy-configmap
+      containers:
+      - name: copy-minio
+        image: minio
+        command: ["/bin/bash"]
+        args:
+        - "entrypoint.sh"
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: entrypoint
+          mountPath: /entrypoint.sh
+          subPath: entrypoint.sh
+        env:
+          - name: kubeflow_minio_url
+            valueFrom:
+              secretKeyRef:
+                name: copy-secret
+                key: kubeflow-url
+                optional: false
+          - name: external_minio_url
+            valueFrom:
+              secretKeyRef:
+                name: copy-secret
+                key: external-url
+                optional: false
+          - name: kubeflow_minio_access
+            valueFrom:
+              secretKeyRef:
+                name: copy-secret
+                key: kf-access-key
+                optional: false
+          - name: kubeflow_minio_access_key
+            valueFrom:
+              secretKeyRef:
+                name: copy-secret
+                key: kf-secret-key
+                optional: false
+          - name: external_minio_access
+            valueFrom:
+              secretKeyRef:
+                name: copy-secret
+                key: external-access-key
+                optional: false
+          - name: external_minio_access_key
+            valueFrom:
+              secretKeyRef:
+                name: copy-secret
+                key: external-secret-key
+                optional: false
+      restartPolicy: Never

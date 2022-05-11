@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- job.yaml
+generatorOptions:
+ disableNameSuffixHash: true
+
+images:
+  - name: minio
+    newName: $(airgapRegistry)minio/mc
+    newTag: RELEASE.2022-03-17T20-25-06Z
+
+vars:
+- name: airgapRegistry
+  objref:
+    kind: ConfigMap
+    name: copy-minio-parameters
+    apiVersion: v1
+  fieldref:
+    fieldpath: data.AIRGAP_REGISTRY
+configMapGenerator:
+- name: copy-configmap
+  files:
+  - entrypoint.sh
+- name: copy-minio-parameters
+  env: params.env
+configurations:
+  - params.yaml
+

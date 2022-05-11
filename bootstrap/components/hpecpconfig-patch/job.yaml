@@ -2,11 +2,10 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: hpecpconfig-patch
-  namespace: kubeflow-operator
 spec:
   template:
     spec:
-      serviceAccountName: kubeflow-operator
+      serviceAccountName: kf-hpecpconfig-patcher
       containers:
         - name: script
           image: bitnami/kubectl:latest

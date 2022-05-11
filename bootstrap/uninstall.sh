@@ -1,34 +1,21 @@
 #!/bin/sh
 set -e
 
+KF_JOBS_NS=${KF_JOBS_NS:-kubeflow-jobs}
 BASEDIR=$(dirname "$0")
-KFCTL_HOME=$(cd "${BASEDIR}/../"; pwd)
+MANIFESTS_LOCATION=${MANIFESTS_LOCATION:-"file:///opt/hpe/static/manifests.tar.gz"}
+HTTP_PROXY=$http_proxy
+HTTPS_PROXY=$https_proxy
+NO_PROXY=$no_proxy
 
-test_dirs()
-{
-    if [ -d "${KFCTL_HOME}/manifests/kfdef/kfctl_hcp_istio/base/" ] ; then
-        return 0
-    else
-        echo "${KFCTL_HOME}/manifests/kfdef/kfctl_hcp_istio/base/ not found.
- Try to pull submodule manifests first. (https://git-scm.com/book/en/v2/Git-Tools-Submodules)"
-        return 1
-    fi
-}
+export HTTP_PROXY HTTPS_PROXY NO_PROXY
 
-uninstall()
-{
-    cd "${KFCTL_HOME}/bootstrap/"
-    kubectl delete -k ../manifests/kfdef/kfctl_hcp_istio/base/
-    kubectl delete -k ./components/dex-secret-ldap/
-    kubectl delete -k ./base/
-}
+KF_JOBS_NS=${KF_JOBS_NS} kubectl apply -k ${BASEDIR}/components/uninstaller -n ${KF_JOBS_NS}
 
-if test_dirs ; then
-    uninstall
-    echo "kubeflow uninstall script finished done"
-    exit 0
+printf "\nWaiting for kubeflow to be undeployed...\n\n"
+if kubectl wait --for=condition=complete job kf-uninstaller -n ${KF_JOBS_NS} --timeout=15m; then
+    KF_JOBS_NS=${KF_JOBS_NS} kubectl delete -k ${BASEDIR}/components/uninstaller -n ${KF_JOBS_NS}
+    kubectl delete ns ${KF_JOBS_NS}
 else
-    echo "kubeflow uninstall script failed."
-    exit 1
+    echo "Error undeploying kubeflow"
 fi
-
