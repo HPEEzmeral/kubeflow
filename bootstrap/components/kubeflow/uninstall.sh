@@ -60,7 +60,10 @@ delete_prism_modeldefaults() {
         printf "No HPECPModelDefaults are found in $PRISM_NS namespace"
     else
         for model_def in $model_defs; do
-            kubectl delete $model_def -n $PRISM_NS
+            timeout=60s kubectl delete $model_def -n $PRISM_NS
+            if $(kubectl get $model_def -n $PRISM_NS) ; then
+                kubectl get $model_def -n $PRISM_NS  -o=json | jq '.metadata.finalizers = null' | kubectl apply -f -
+            fi;
         done;
     fi
 }
@@ -117,8 +120,11 @@ delete_kf_services()
 delete_kubeflow_profiles() {
     printf  "\n******* Started deleting Kubeflow profiles.. *\n\n"
     for profile in $(kubectl get profiles -o name); do
-        if [ $(kubectl get $profile -o jsonpath='{.metadata.finalizers}' | grep "profile-finalizer") ]; then
-            kubectl delete $profile
+        if [ $(kubectl get $profile -o jsonpath='{..metadata.finalizers}' | grep "profile-finalizer") ]; then
+            kubectl delete $profile --timeout=30s
+            if kubectl get $profile -o name; then
+                kubectl get $profile -o=json | jq '.metadata.finalizers = null' | kubectl apply -f -
+            fi;
         fi;
     done
 }
@@ -208,9 +214,7 @@ uninstall() {
     
     delete_kf_services
 
-    if [ ${DISABLE_ISTIO} != true ]; then
-        delete_cluster_local_gateway
-    fi
+    delete_cluster_local_gateway
     
     delete_knative
     if [ ${DISABLE_DEX} != true ] ; then

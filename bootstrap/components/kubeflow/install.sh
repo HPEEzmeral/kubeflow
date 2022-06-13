@@ -125,9 +125,7 @@ install()
 
     deploy_knative
 
-    if [ ${DISABLE_ISTIO} != true ]; then
-        deploy_cluster_local_gateway
-    fi
+    deploy_cluster_local_gateway
 
     MAX_RETRIES=8 deploy_kf_services
 
