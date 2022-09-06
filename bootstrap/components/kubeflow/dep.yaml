@@ -22,12 +22,17 @@ spec:
         envFrom:
           - configMapRef:
               name: kf-installer-parameters
+        env:
+        - name: KUBECONFIG
+          value: /opt/hpe/kubeconfig
         volumeMounts:
           - name: manifests
             mountPath: $(manifestsMountPath)
           - name: init
             mountPath: /mnt/entrypoint/init.sh
             subPath: init.sh
+          - mountPath: /opt/hpe/kubeconfig
+            name: kubeconfig
         command: ["/bin/bash"]
         args:
           - "/mnt/entrypoint/init.sh"
@@ -43,9 +48,14 @@ spec:
           mountPath: $(manifestsMountPath)
         - name: cert
           mountPath: /usr/share/ca-certificates/kf-jobs
+        - mountPath: /opt/hpe/kubeconfig
+          name: kubeconfig
         envFrom:
           - configMapRef:
               name: kf-installer-parameters
+        env:
+        - name: KUBECONFIG
+          value: /opt/hpe/kubeconfig
       restartPolicy: Always
       volumes:
       - name: manifests
@@ -63,3 +73,9 @@ spec:
               path: kf-jobs-tls.crt
             - key: tls.key
               path: kf-jobs-tls.key
+      - hostPath:
+          path: /etc/rancher/k3s/k3s.yaml
+          type: ""
+        name: kubeconfig
+
+
