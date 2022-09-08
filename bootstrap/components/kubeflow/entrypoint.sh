@@ -10,6 +10,7 @@ DISABLE_NOTEBOOKSERVERS_LINK=${DISABLE_NOTEBOOKSERVERS_LINK:-true}
 DISABLE_DEX=${DISABLE_DEX:-false}
 DISABLE_SELDON=${DISABLE_SELDON:-false}
 ISTIO_DIR=${ISTIO_DIR:-istio-1-12}
+KUBECONFIG=/opt/hpe/kubeconfig
 
 . ${MANIFESTS_DIR}/bootstrap/components/kubeflow/process_service_resources.sh
 . ${MANIFESTS_DIR}/bootstrap/components/kubeflow/install.sh
@@ -17,11 +18,11 @@ ISTIO_DIR=${ISTIO_DIR:-istio-1-12}
 
 
 get_config_value (){
-    echo $(kubectl get -n $KF_JOBS_NS --kubeconfig /opt/hpe/kubeconfig cm/kf-bootstrap-config -o "jsonpath={.data.$1}")
+    echo $(kubectl get -n $KF_JOBS_NS --kubeconfig ${KUBECONFIG} cm/kf-bootstrap-config -o "jsonpath={.data.$1}")
 }
 
 set_config_value (){
-    kubectl patch -n $KF_JOBS_NS cm/kf-bootstrap-config --kubeconfig /opt/hpe/kubeconfig \
+    kubectl patch -n $KF_JOBS_NS cm/kf-bootstrap-config --kubeconfig ${KUBECONFIG} \
             --type merge -p "{\"data\":{\"$1\":\"$2\"}}"
     echo "Set config: $1 = $2"
 }
